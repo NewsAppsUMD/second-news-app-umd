@@ -15,7 +15,7 @@ What you will make
 ******************
 
 By the end of this lesson, you will publish an interactive database and map
-of notices of foreclosure in Maryland zip codes over the past two years.
+of notices of foreclosure in Maryland zip codes over the past several years.
 You will do this with data published by the state at `https://opendata.maryland.gov/Housing/Maryland-Notices-of-Intent-to-Foreclose-by-Zip-Cod/ftsr-vapt <https://opendata.maryland.gov/Housing/Maryland-Notices-of-Intent-to-Foreclose-by-Zip-Cod/ftsr-vapt>`_
 
 *****************
@@ -268,11 +268,11 @@ Commit the changes to your repository, if only for practice.
 Act 3: Hello SQLite
 *******************
 
-When you’re Serious About Data (which we are, of course), you store your data in a database, not an Excel spreadsheet or CSV file. They’re faster and more flexible.
+When you're Serious About Data (which we are, of course), you store your data in a database, not an Excel spreadsheet or CSV file. They're faster and more flexible.
 
-Our database is going to be a SQLite database, which is perfect and wonderful because it’s just a file. If I want to send you my database, I can just send it to you via email or Dropbox or whatever - no playing around with installing things or servers or anything like this. Think of it like a small upgrade to a CSV file.
+Our database is going to be a SQLite database, which is perfect and wonderful because it's just a file. If I want to send you my database, I can just send it to you via email or Dropbox or whatever - no playing around with installing things or servers or anything like this. Think of it like a small upgrade to a CSV file.
 
-To create our new SQLite database, we’re going to start with a CSV file. First, make a directory to store our data file.
+To create our new SQLite database, we're going to start with a CSV file. First, make a directory to store our data file.
 
 .. code-block:: bash
 
@@ -290,7 +290,7 @@ Then we'll create the database from the CSV file:
 .. code-block:: bash
 
     $ pip install sqlite-utils
-    $ sqlite-utils insert foreclosures.db notices static/foreclosures_by_month.csv --csv
+    $ sqlite-utils insert foreclosures.db zip_months static/foreclosures_by_month.csv --csv
 
 Add both the CSV and database file to your git repository.
 
@@ -302,7 +302,7 @@ Add both the CSV and database file to your git repository.
 
 Once upon a time there were databases, and there was SQL, and there were people who loved writing SQL. SQL is cool, SQL is great!
 
-Then everyone else was invented, and they didn’t like writing SQL, they just liked writing Python. So the Gods invented ORMs, which basically mean “instead of writing SQL you’ll just write Python and the ORM will talk to the database for you.”
+Then everyone else was invented, and they didn't like writing SQL, they just liked writing Python. So the Gods invented ORMs, which basically mean “instead of writing SQL you'll just write Python and the ORM will talk to the database for you.”
 
 Now everyone can be happy, sort of.
 
@@ -330,9 +330,9 @@ Next we will open up ``app.py`` in your code editor and add the import needed to
     if __name__ == '__main__':
         app.run(debug=True, use_reloader=True)
 
-Now we need to tell Flask about our database and its notices table. Every table is called a Model, and we use that model to play around with its associated table from Python. (Although we only have one table in this case, so we’ll only have one model).
+Now we need to tell Flask about our database and its notices table. Every table is called a Model, and we use that model to play around with its associated table from Python. (Although we only have one table in this case, so we'll only have one model).
 
-Going back to our code - right after we make our Flask app with app = Flask(__name__), you’ll want to tell Peewee everything important about the database and its tables. It’ll look like this:
+Going back to our code - right after we make our Flask app with app = Flask(__name__), you'll want to tell Peewee everything important about the database and its tables. It'll look like this:
 
 .. code-block:: python
     :emphasize-lines: 6-15
@@ -344,7 +344,7 @@ Going back to our code - right after we make our Flask app with app = Flask(__na
 
     db = SqliteDatabase('foreclosures.db')
 
-    class Notice(Model):
+    class ZipMonth(Model):
         id = IntegerField(unique=True)
         zip = CharField()
         month = DateField()
@@ -353,19 +353,19 @@ Going back to our code - right after we make our Flask app with app = Flask(__na
         class Meta:
             database = db
 
-Let’s take it line-by-line to get an idea of what’s going on (or a-few-lines by a-few-lines).
+Let's take it line-by-line to get an idea of what's going on (or a-few-lines by a-few-lines).
 
 First off, you tell the app where to find the database and have Peewee read it. Then we tell Peewee about the notices table.
 
 We need to tell the model several things:
 
-    * Its name. In this case, we’re calling it Notice, because it’s… a list of notices.
+    * Its name. In this case, we're calling it ZipMonth, because each row represents a month of notices for a zip code.
     * The columns and their datatypes. We also add a "unique=True" to the id column because no two values of that column are the same.
-    * The Meta class just makes explicit which database the notices table is in (we could use multiple databases) and the table name (in case we want to change it).
+    * The Meta class just makes explicit which database the zip_months table is in (we could use multiple databases) and the table name (in case we want to change it).
 
-Fire up the server if it isn't running and give your page a refresh to make sure you don’t have any typos or other little issues, and then we’ll charge ahead to actually using this model.
+Fire up the server if it isn't running and give your page a refresh to make sure you don't have any typos or other little issues, and then we'll charge ahead to actually using this model.
 
-We don’t know how to make our database talk to the web page yet, so we’re going to cheat a little bit. Let’s edit the /index route to make it print something out:
+We don't know how to make our database talk to the web page yet, so we're going to cheat a little bit. Let's edit the /index route to make it print something out:
 
 .. code-block:: python
     :emphasize-lines: 20
@@ -377,42 +377,42 @@ We don’t know how to make our database talk to the web page yet, so we’re go
 
     db = SqliteDatabase('foreclosures.db')
 
-    class Notice(Model):
+    class ZipMonth(Model):
         id = IntegerField(unique=True)
         zip = CharField()
         month = DateField()
         notices = IntegerField()
 
         class Meta:
-            table_name = "notices"
+            table_name = "zip_months"
             database = db
 
     @app.route("/")
     def index():
-        print("Total number of notices is", Notice.select().count())
+        print("Total number of rows in the zip_months table is", ZipMonth.select().count())
         template = 'index.html'
         return render_template(template)
 
     if __name__ == '__main__':
         app.run(debug=True, use_reloader=True)
 
-Refresh the page and you’ll see… nothing changed? But pop on over to your command line, and you’ll see a secret little line hiding in the debug output.
+Refresh the page and you'll see… nothing changed? But pop on over to your command line, and you'll see a secret little line hiding in the debug output.
 
-When you use print in the Flask app, it doesn’t print to the web page. That’s the render_template part. Instead, print prints to the command line. It’s totally useless for showing things to the user, but a nice cheat to check things and help us debug.
+When you use print in the Flask app, it doesn't print to the web page. That's the render_template part. Instead, print prints to the command line. It's totally useless for showing things to the user, but a nice cheat to check things and help us debug.
 
-Where’d that 11488 come from? Notice.select().count()! We used our model - Notice - to visit the database, build a new query, and count the number of rows in the table.
+Where'd that 11488 come from? ZipMonth.select().count()! We used our model - ZipMonth - to visit the database, build a new query, and count the number of rows in the table.
 
-Because we’re using an Peewee, we write Python, not SQL. Peewee takes care of the translation to SQL and just gives us the result.
+Because we're using an Peewee, we write Python, not SQL. Peewee takes care of the translation to SQL and just gives us the result.
 
 For example, we can do a WHERE query - filtering our data - by using get or where. Retrieving a single records might look like this:
 
 .. code-block:: python
 
-    >>> zip = Notice.get(zip == '20906')
+    >>> zip = ZipMonth.get(zip == '20906')
     >>> zip.id
     3949
 
-To play around a little, let’s try to find a specific zip code and month and print out its number of notices. We can use `where` to do that as well:
+To play around a little, let's try to find a specific zip code and month and print out its number of notices. We can use `where` to do that as well:
 
 .. code-block:: python
     :emphasize-lines: 21-22
@@ -424,21 +424,21 @@ To play around a little, let’s try to find a specific zip code and month and p
 
     db = SqliteDatabase('foreclosures.db')
 
-    class Notice(Model):
+    class ZipMonth(Model):
         id = IntegerField(unique=True)
         zip = CharField()
         month = DateField()
         notices = IntegerField()
 
         class Meta:
-            table_name = "notices"
+            table_name = "zip_months"
             database = db
 
     @app.route("/")
     def index():
-        print("Total number of notices is", Notice.select().count())
-        notice = Notice.select().where(Notice.id==3963).get()
-        print(f"Zip code {notice.zip} had {notice.notices} in {notice.month}")
+        print("Total number of notices is", ZipMonth.select().count())
+        notice = ZipMonth.select().where(ZipMonth.id==3963).get()
+        print(f"Zip code {ZipMonth.zip} had {ZipMonth.notices} in {ZipMonth.month}")
         template = 'index.html'
         return render_template(template)
 
@@ -447,9 +447,9 @@ To play around a little, let’s try to find a specific zip code and month and p
 
 Make sure to save ``app.py``. Then reload the page and check the output in the terminal - remember, we're not showing anything on the page yet.
 
-What comes back from the database is that one row where Notice.id==3963 - we only got one because we asked for .get(). It works just like a normal variable, kind of like a dictionary that you don’t need ['whatever'] for. Instead, you can just ask for each column with a period.
+What comes back from the database is that one row where ZipMonth.id==3963 - we only got one because we asked for .get(). It works just like a normal variable, kind of like a dictionary that you don't need ['whatever'] for. Instead, you can just ask for each column with a period.
 
-Since zip is the column with the zip code in it, we can just ask for notice.zip and it will print right out.
+Since zip is the column with the zip code in it, we can just ask for ZipMonth.zip and it will print right out.
 
 If we want to get fancier, we can also select multiple rows with .where().
 
@@ -463,24 +463,24 @@ If we want to get fancier, we can also select multiple rows with .where().
 
     db = SqliteDatabase('foreclosures.db')
 
-    class Notice(Model):
+    class ZipMonth(Model):
         id = IntegerField(unique=True)
         zip = CharField()
         month = DateField()
         notices = IntegerField()
 
         class Meta:
-            table_name = "notices"
+            table_name = "zip_months"
             database = db
 
     @app.route("/")
     def index():
-        print("Total number of notices is", Notice.select().count())
-        notice = Notice.select().where(Notice.id==3963).get()
-        print(f"Zip code {notice.zip} had {notice.notices} in {notice.month}")
-        notices_20906 = Notice.select().where(Notice.zip=='20906')
+        print("Total number of notices is", ZipMonth.select().count())
+        notice = ZipMonth.select().where(ZipMonth.id==3963).get()
+        print(f"Zip code {ZipMonth.zip} had {ZipMonth.notices} in {ZipMonth.month}")
+        notices_20906 = ZipMonth.select().where(ZipMonth.zip=='20906')
         for notice in notices_20906:
-            print(notice.notices)
+            print(ZipMonth.notices)
         template = 'index.html'
         return render_template(template)
 
@@ -489,7 +489,7 @@ If we want to get fancier, we can also select multiple rows with .where().
 
 Save app.py, reload the index page and check the terminal again. Lots of printing!
 
-We’ve been flexing our sweet new Peewee ORM, testing our skills at querying and counting and WHEREing without WHEREs, but how about we actually make this useful? In the next section we’ll take a look at how we can put this data on the actual web page.
+We've been flexing our sweet new Peewee ORM, testing our skills at querying and counting and WHEREing without WHEREs, but how about we actually make this useful? In the next section we'll take a look at how we can put this data on the actual web page.
 
 *****************
 Act 4: Hello HTML
@@ -507,19 +507,19 @@ Let's edit our index template so that we're sending some information from the da
 
     db = SqliteDatabase('foreclosures.db')
 
-    class Notice(Model):
+    class ZipMonth(Model):
         id = IntegerField(unique=True)
         zip = CharField()
         month = DateField()
         notices = IntegerField()
 
         class Meta:
-            table_name = "notices"
+            table_name = "zip_months"
             database = db
 
     @app.route("/")
     def index():
-        notice_count = Notice.select().count()
+        notice_count = ZipMonth.select().count()
         template = 'index.html'
         return render_template(template, count = notice_count)
 
@@ -541,7 +541,7 @@ Now, in the template file, let's add our `count` variable to the template and cl
         </body>
     </html>
 
-Sending a single integer to our template is pretty easy, but so is sending a whole mess of things! Let’s send those notices from the 20906 ZIP code.
+Sending a single integer to our template is pretty easy, but so is sending a whole mess of things! Let's send those notices from the 20906 ZIP code.
 
 .. code-block:: python
     :emphasize-lines: 21, 23
@@ -553,20 +553,20 @@ Sending a single integer to our template is pretty easy, but so is sending a who
 
     db = SqliteDatabase('foreclosures.db')
 
-    class Notice(Model):
+    class ZipMonth(Model):
         id = IntegerField(unique=True)
         zip = CharField()
         month = DateField()
         notices = IntegerField()
 
         class Meta:
-            table_name = "notices"
+            table_name = "zip_months"
             database = db
 
     @app.route("/")
     def index():
-        notice_count = Notice.select().count()
-        notices_20906 = Notice.select().where(Notice.zip=='20906')
+        notice_count = ZipMonth.select().count()
+        notices_20906 = ZipMonth.select().where(ZipMonth.zip=='20906')
         template = 'index.html'
         return render_template(template, count = notice_count, notices = notices_20906)
 
@@ -586,7 +586,7 @@ Save that, and then we'll update the template:
             <h1>Maryland Notices of Foreclosure by Zip Code</h1>
             <p>There are {{ count }} records in the database.</p>
             {% for notice in notices %}
-               <p>{{ notice.month }}: {{ notice.notices }}</p>
+               <p>{{ ZipMonth.month }}: {{ ZipMonth.notices }}</p>
             {% endfor %}
         </body>
     </html>
@@ -607,34 +607,34 @@ To build our detail page, we need a new route in app.py. This is going to be a s
 
     db = SqliteDatabase('foreclosures.db')
 
-    class Notice(Model):
+    class ZipMonth(Model):
         id = IntegerField(unique=True)
         zip = CharField()
         month = DateField()
         notices = IntegerField()
 
         class Meta:
-            table_name = "notices"
+            table_name = "zip_months"
             database = db
 
     @app.route("/")
     def index():
-        notice_count = Notice.select().count()
-        notices_20906 = Notice.select().where(Notice.zip=='20906')
+        notice_count = ZipMonth.select().count()
+        notices_20906 = ZipMonth.select().where(ZipMonth.zip=='20906')
         template = 'index.html'
         return render_template(template, count = notice_count, notices = notices_20906)
 
     @app.route('/zipcode/<slug>')
     def detail(slug):
         zipcode = slug
-        notices = Notice.select().where(Notice.zip==slug)
-        total_notices = Notice.select(fn.SUM(Notice.notices).alias('sum')).where(Notice.zip==slug).scalar()
+        notices = ZipMonth.select().where(ZipMonth.zip==slug)
+        total_notices = ZipMonth.select(fn.SUM(ZipMonth.notices).alias('sum')).where(ZipMonth.zip==slug).scalar()
         return render_template("detail.html", zipcode=zipcode, notices=notices, notices_count=len(notices), total_notices = total_notices)
 
     if __name__ == '__main__':
         app.run(debug=True, use_reloader=True)
 
-Now anything can do into the part after /zipcode/. If we want to find 20906, we’ll check out /zipcode/20906. But first we need to create detail template!
+Now anything can do into the part after /zipcode/. If we want to find 20906, we'll check out /zipcode/20906. But first we need to create detail template!
 
 .. code-block:: bash
 
@@ -678,27 +678,27 @@ Now let's generate a list of zip codes that can link to the detail pages from th
 
     db = SqliteDatabase('foreclosures.db')
 
-    class Notice(Model):
+    class ZipMonth(Model):
         id = IntegerField(unique=True)
         zip = CharField()
         month = DateField()
         notices = IntegerField()
 
         class Meta:
-            table_name = "notices"
+            table_name = "zip_months"
             database = db
 
     @app.route("/")
     def index():
-        notice_count = Notice.select().count()
-        all_zips = (Notice.select(Notice.zip).distinct())
+        notice_count = ZipMonth.select().count()
+        all_zips = (ZipMonth.select(ZipMonth.zip).distinct())
         template = 'index.html'
         return render_template(template, count = notice_count, all_zips = all_zips)
 
     @app.route('/zipcode/<slug>')
     def detail(slug):
         zipcode = slug
-        notices = Notice.select().where(Notice.zip==slug)
+        notices = ZipMonth.select().where(ZipMonth.zip==slug)
         return render_template("detail.html", zipcode=zipcode, notices=notices, notices_count=len(notices))
 
     if __name__ == '__main__':
@@ -754,31 +754,31 @@ Now, let's think about visualizing this data. Let's create a heatmap of the mont
 
     db = SqliteDatabase('foreclosures.db')
 
-    class Notice(Model):
+    class ZipMonth(Model):
         id = IntegerField(unique=True)
         zip = CharField()
         month = DateField()
         notices = IntegerField()
 
         class Meta:
-            table_name = "notices"
+            table_name = "zip_months"
             database = db
 
     @app.route("/")
     def index():
-        notice_count = Notice.select().count()
-        all_zips = (Notice.select(Notice.zip).distinct())
+        notice_count = ZipMonth.select().count()
+        all_zips = (ZipMonth.select(ZipMonth.zip).distinct())
         template = 'index.html'
         return render_template(template, count = notice_count, all_zips = all_zips)
 
     @app.route('/zipcode/<slug>')
     def detail(slug):
         zipcode = slug
-        notices = Notice.select().where(Notice.zip==slug)
-        total_notices = Notice.select(fn.SUM(Notice.notices).alias('sum')).where(Notice.zip==slug).scalar()
+        notices = ZipMonth.select().where(ZipMonth.zip==slug)
+        total_notices = ZipMonth.select(fn.SUM(ZipMonth.notices).alias('sum')).where(ZipMonth.zip==slug).scalar()
         notice_json = []
         for notice in notices:
-            notice_json.append({'x': str(notice.month.year) + ' ' + str(notice.month.month), 'y': notice.zip, 'heat': notice.notices})
+            notice_json.append({'x': str(ZipMonth.month.year) + ' ' + str(ZipMonth.month.month), 'y': ZipMonth.zip, 'heat': ZipMonth.notices})
         return render_template("detail.html", zipcode=zipcode, notices=notices, notices_count=len(notices), notice_json = notice_json, total_notices = total_notices)
 
     if __name__ == '__main__':
@@ -871,31 +871,31 @@ Let's incorporate that into our detail page, first by adding code to our app.py 
     census_api_key = os.environ.get('CENSUS_API_KEY')
     c = Census(census_api_key)
 
-    class Notice(Model):
+    class ZipMonth(Model):
         id = IntegerField(unique=True)
         zip = CharField()
         month = DateField()
         notices = IntegerField()
 
         class Meta:
-            table_name = "notices"
+            table_name = "zip_months"
             database = db
 
     @app.route("/")
     def index():
-        notice_count = Notice.select().count()
-        all_zips = (Notice.select(Notice.zip).distinct())
+        notice_count = ZipMonth.select().count()
+        all_zips = (ZipMonth.select(ZipMonth.zip).distinct())
         template = 'index.html'
         return render_template(template, count = notice_count, all_zips = all_zips)
 
     @app.route('/zipcode/<slug>')
     def detail(slug):
         zipcode = slug
-        notices = Notice.select().where(Notice.zip==slug)
-        total_notices = Notice.select(fn.SUM(Notice.notices).alias('sum')).where(Notice.zip==slug).scalar()
+        notices = ZipMonth.select().where(ZipMonth.zip==slug)
+        total_notices = ZipMonth.select(fn.SUM(ZipMonth.notices).alias('sum')).where(ZipMonth.zip==slug).scalar()
         notice_json = []
         for notice in notices:
-            notice_json.append({'x': str(notice.month.year) + ' ' + str(notice.month.month), 'y': notice.zip, 'heat': notice.notices})
+            notice_json.append({'x': str(ZipMonth.month.year) + ' ' + str(ZipMonth.month.month), 'y': ZipMonth.zip, 'heat': ZipMonth.notices})
         owner_occupied = c.acs5.state_zipcode(('NAME', 'B25003_002E'), '24', zipcode)
         return render_template("detail.html", zipcode=zipcode, notices=notices, notices_count=len(notices), notice_json = notice_json, total_notices = total_notices, owner_occupied = owner_occupied[0]['B25003_002E'])
 
@@ -959,31 +959,31 @@ First we'll make sure that app.py is sending an integer, not a float, to the tem
     census_api_key = os.environ.get('CENSUS_API_KEY')
     c = Census(census_api_key)
 
-    class Notice(Model):
+    class ZipMonth(Model):
         id = IntegerField(unique=True)
         zip = CharField()
         month = DateField()
         notices = IntegerField()
 
         class Meta:
-            table_name = "notices"
+            table_name = "zip_months"
             database = db
 
     @app.route("/")
     def index():
-        notice_count = Notice.select().count()
-        all_zips = (Notice.select(Notice.zip).distinct())
+        notice_count = ZipMonth.select().count()
+        all_zips = (ZipMonth.select(ZipMonth.zip).distinct())
         template = 'index.html'
         return render_template(template, count = notice_count, all_zips = all_zips)
 
     @app.route('/zipcode/<slug>')
     def detail(slug):
         zipcode = slug
-        notices = Notice.select().where(Notice.zip==slug)
-        total_notices = Notice.select(fn.SUM(Notice.notices).alias('sum')).where(Notice.zip==slug).scalar()
+        notices = ZipMonth.select().where(ZipMonth.zip==slug)
+        total_notices = ZipMonth.select(fn.SUM(ZipMonth.notices).alias('sum')).where(ZipMonth.zip==slug).scalar()
         notice_json = []
         for notice in notices:
-            notice_json.append({'x': str(notice.month.year) + ' ' + str(notice.month.month), 'y': notice.zip, 'heat': notice.notices})
+            notice_json.append({'x': str(ZipMonth.month.year) + ' ' + str(ZipMonth.month.month), 'y': ZipMonth.zip, 'heat': ZipMonth.notices})
         owner_occupied = c.acs5.state_zipcode(('NAME', 'B25003_002E'), '24', zipcode)
         return render_template("detail.html", zipcode=zipcode, notices=notices, notices_count=len(notices), notice_json = notice_json, total_notices = total_notices, owner_occupied = int(owner_occupied[0]['B25003_002E']))
 
@@ -1046,8 +1046,8 @@ information about the zip codes in our notices table. Let's create a separate Py
     census_api_key = os.environ.get('CENSUS_API_KEY')
     c = Census(census_api_key)
 
-    # get all the zips from the Notices
-    all_zips = (Notice.select(Notice.zip).distinct())
+    # get all the unique zips from the ZipMonths
+    all_zips = (ZipMonth.select(ZipMonth.zip).distinct())
 
     # create a new table for the zip codes and owner_occupied figures
     class ZipCode(Model):
@@ -1091,14 +1091,14 @@ First, we need to update app.py to let it know that the new table exists and we 
     census_api_key = os.environ.get('CENSUS_API_KEY')
     c = Census(census_api_key)
 
-    class Notice(Model):
+    class ZipMonth(Model):
         id = IntegerField(unique=True)
         zip = CharField()
         month = DateField()
         notices = IntegerField()
 
         class Meta:
-            table_name = "notices"
+            table_name = "zip_months"
             database = db
 
     class ZipCode(Model):
@@ -1110,7 +1110,7 @@ First, we need to update app.py to let it know that the new table exists and we 
 
     @app.route("/")
     def index():
-        notice_count = Notice.select().count()
+        notice_count = ZipMonth.select().count()
         all_zips = ZipCode.select()
         template = 'index.html'
         return render_template(template, count = notice_count, all_zips = all_zips)
@@ -1118,11 +1118,11 @@ First, we need to update app.py to let it know that the new table exists and we 
     @app.route('/zipcode/<slug>')
     def detail(slug):
         zipcode = slug
-        notices = Notice.select().where(Notice.zip==slug)
-        total_notices = Notice.select(fn.SUM(Notice.notices).alias('sum')).where(Notice.zip==slug).scalar()
+        notices = ZipMonth.select().where(ZipMonth.zip==slug)
+        total_notices = ZipMonth.select(fn.SUM(ZipMonth.notices).alias('sum')).where(ZipMonth.zip==slug).scalar()
         notice_json = []
         for notice in notices:
-            notice_json.append({'x': str(notice.month.year) + ' ' + str(notice.month.month), 'y': notice.zip, 'heat': notice.notices})
+            notice_json.append({'x': str(ZipMonth.month.year) + ' ' + str(ZipMonth.month.month), 'y': ZipMonth.zip, 'heat': ZipMonth.notices})
         owner_occupied = c.acs5.state_zipcode(('NAME', 'B25003_002E'), '24', zipcode)
         return render_template("detail.html", zipcode=zipcode, notices=notices, notices_count=len(notices), notice_json = notice_json, total_notices = total_notices, owner_occupied = int(owner_occupied[0]['B25003_002E']))
 
@@ -1183,14 +1183,14 @@ Next, we can tackle retrieving the zipcode and owner-occupied housing units from
     census_api_key = os.environ.get('CENSUS_API_KEY')
     c = Census(census_api_key)
 
-    class Notice(Model):
+    class ZipMonth(Model):
         id = IntegerField(unique=True)
         zip = CharField()
         month = DateField()
         notices = IntegerField()
 
         class Meta:
-            table_name = "notices"
+            table_name = "zip_months"
             database = db
 
     class ZipCode(Model):
@@ -1202,7 +1202,7 @@ Next, we can tackle retrieving the zipcode and owner-occupied housing units from
 
     @app.route("/")
     def index():
-        notice_count = Notice.select().count()
+        notice_count = ZipMonth.select().count()
         all_zips = ZipCode.select()
         template = 'index.html'
         return render_template(template, count = notice_count, all_zips = all_zips)
@@ -1210,11 +1210,11 @@ Next, we can tackle retrieving the zipcode and owner-occupied housing units from
     @app.route('/zipcode/<slug>')
     def detail(slug):
         zipcode = ZipCode.get(ZipCode.zipcode==slug)
-        notices = Notice.select().where(Notice.zip==slug)
-        total_notices = Notice.select(fn.SUM(Notice.notices).alias('sum')).where(Notice.zip==slug).scalar()
+        notices = ZipMonth.select().where(ZipMonth.zip==slug)
+        total_notices = ZipMonth.select(fn.SUM(ZipMonth.notices).alias('sum')).where(ZipMonth.zip==slug).scalar()
         notice_json = []
         for notice in notices:
-            notice_json.append({'x': str(notice.month.year) + ' ' + str(notice.month.month), 'y': notice.zip, 'heat': notice.notices})
+            notice_json.append({'x': str(ZipMonth.month.year) + ' ' + str(ZipMonth.month.month), 'y': ZipMonth.zip, 'heat': ZipMonth.notices})
         return render_template("detail.html", zipcode=zipcode, notices=notices, notices_count=len(notices), notice_json = notice_json, total_notices = total_notices)
 
     if __name__ == '__main__':
