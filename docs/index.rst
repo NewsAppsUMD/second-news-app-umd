@@ -438,7 +438,7 @@ To play around a little, let's try to find a specific zip code and month and pri
     def index():
         print("Total number of notices is", ZipMonth.select().count())
         notice = ZipMonth.select().where(ZipMonth.id==3963).get()
-        print(f"Zip code {ZipMonth.zip} had {ZipMonth.notices} in {ZipMonth.month}")
+        print(f"Zip code {notice.zip} had {notice.notices} in {notice.month}")
         template = 'index.html'
         return render_template(template)
 
@@ -449,7 +449,7 @@ Make sure to save ``app.py``. Then reload the page and check the output in the t
 
 What comes back from the database is that one row where ZipMonth.id==3963 - we only got one because we asked for .get(). It works just like a normal variable, kind of like a dictionary that you don't need ['whatever'] for. Instead, you can just ask for each column with a period.
 
-Since zip is the column with the zip code in it, we can just ask for ZipMonth.zip and it will print right out.
+Since zip is the column with the zip code in it, we can just ask for notice.zip and it will print right out.
 
 If we want to get fancier, we can also select multiple rows with .where().
 
@@ -480,7 +480,7 @@ If we want to get fancier, we can also select multiple rows with .where().
         print(f"Zip code {ZipMonth.zip} had {ZipMonth.notices} in {ZipMonth.month}")
         notices_20906 = ZipMonth.select().where(ZipMonth.zip=='20906')
         for notice in notices_20906:
-            print(ZipMonth.notices)
+            print(notice.notices)
         template = 'index.html'
         return render_template(template)
 
@@ -586,7 +586,7 @@ Save that, and then we'll update the template:
             <h1>Maryland Notices of Foreclosure by Zip Code</h1>
             <p>There are {{ count }} records in the database.</p>
             {% for notice in notices %}
-               <p>{{ ZipMonth.month }}: {{ ZipMonth.notices }}</p>
+               <p>{{ notice.month }}: {{ notice.notices }}</p>
             {% endfor %}
         </body>
     </html>
@@ -778,7 +778,7 @@ Now, let's think about visualizing this data. Let's create a heatmap of the mont
         total_notices = ZipMonth.select(fn.SUM(ZipMonth.notices).alias('sum')).where(ZipMonth.zip==slug).scalar()
         notice_json = []
         for notice in notices:
-            notice_json.append({'x': str(ZipMonth.month.year) + ' ' + str(ZipMonth.month.month), 'y': ZipMonth.zip, 'heat': ZipMonth.notices})
+            notice_json.append({'x': str(notice.month.year) + ' ' + str(notice.month.month), 'y': notice.zip, 'heat': notice.notices})
         return render_template("detail.html", zipcode=zipcode, notices=notices, notices_count=len(notices), notice_json = notice_json, total_notices = total_notices)
 
     if __name__ == '__main__':
@@ -895,7 +895,7 @@ Let's incorporate that into our detail page, first by adding code to our app.py 
         total_notices = ZipMonth.select(fn.SUM(ZipMonth.notices).alias('sum')).where(ZipMonth.zip==slug).scalar()
         notice_json = []
         for notice in notices:
-            notice_json.append({'x': str(ZipMonth.month.year) + ' ' + str(ZipMonth.month.month), 'y': ZipMonth.zip, 'heat': ZipMonth.notices})
+            notice_json.append({'x': str(notice.month.year) + ' ' + str(notice.month.month), 'y': notice.zip, 'heat': notice.notices})
         owner_occupied = c.acs5.state_zipcode(('NAME', 'B25003_002E'), '24', zipcode)
         return render_template("detail.html", zipcode=zipcode, notices=notices, notices_count=len(notices), notice_json = notice_json, total_notices = total_notices, owner_occupied = owner_occupied[0]['B25003_002E'])
 
@@ -983,7 +983,7 @@ First we'll make sure that app.py is sending an integer, not a float, to the tem
         total_notices = ZipMonth.select(fn.SUM(ZipMonth.notices).alias('sum')).where(ZipMonth.zip==slug).scalar()
         notice_json = []
         for notice in notices:
-            notice_json.append({'x': str(ZipMonth.month.year) + ' ' + str(ZipMonth.month.month), 'y': ZipMonth.zip, 'heat': ZipMonth.notices})
+            notice_json.append({'x': str(notice.month.year) + ' ' + str(notice.month.month), 'y': notice.zip, 'heat': notice.notices})
         owner_occupied = c.acs5.state_zipcode(('NAME', 'B25003_002E'), '24', zipcode)
         return render_template("detail.html", zipcode=zipcode, notices=notices, notices_count=len(notices), notice_json = notice_json, total_notices = total_notices, owner_occupied = int(owner_occupied[0]['B25003_002E']))
 
@@ -1122,7 +1122,7 @@ First, we need to update app.py to let it know that the new table exists and we 
         total_notices = ZipMonth.select(fn.SUM(ZipMonth.notices).alias('sum')).where(ZipMonth.zip==slug).scalar()
         notice_json = []
         for notice in notices:
-            notice_json.append({'x': str(ZipMonth.month.year) + ' ' + str(ZipMonth.month.month), 'y': ZipMonth.zip, 'heat': ZipMonth.notices})
+            notice_json.append({'x': str(notice.month.year) + ' ' + str(notice.month.month), 'y': notice.zip, 'heat': notice.notices})
         owner_occupied = c.acs5.state_zipcode(('NAME', 'B25003_002E'), '24', zipcode)
         return render_template("detail.html", zipcode=zipcode, notices=notices, notices_count=len(notices), notice_json = notice_json, total_notices = total_notices, owner_occupied = int(owner_occupied[0]['B25003_002E']))
 
@@ -1214,7 +1214,7 @@ Next, we can tackle retrieving the zipcode and owner-occupied housing units from
         total_notices = ZipMonth.select(fn.SUM(ZipMonth.notices).alias('sum')).where(ZipMonth.zip==slug).scalar()
         notice_json = []
         for notice in notices:
-            notice_json.append({'x': str(ZipMonth.month.year) + ' ' + str(ZipMonth.month.month), 'y': ZipMonth.zip, 'heat': ZipMonth.notices})
+            notice_json.append({'x': str(notice.month.year) + ' ' + str(notice.month.month), 'y': notice.zip, 'heat': notice.notices})
         return render_template("detail.html", zipcode=zipcode, notices=notices, notices_count=len(notices), notice_json = notice_json, total_notices = total_notices)
 
     if __name__ == '__main__':
